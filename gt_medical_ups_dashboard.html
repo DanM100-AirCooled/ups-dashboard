@@ -355,11 +355,66 @@ body {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
 }
+.kpi-card.k-late {
+  border-left-color: #f56565;
+  cursor: pointer;
+}
+.kpi-card.k-late:hover { background: #fff5f5; }
+.kpi-card.k-late.active-filter { background: #fff5f5; box-shadow: 0 0 0 2px #f56565, 0 4px 14px rgba(245,101,101,.25); }
+
+/* ── Quick Analysis bar ── */
+.quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.quick-bar-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c53030;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.qf-btn {
+  padding: 5px 13px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  background: white;
+  font-size: 12px;
+  color: #4a5568;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.qf-btn:hover { border-color: #f56565; color: #c53030; background: #fff5f5; }
+.qf-btn.qf-active { background: #f56565; color: white; border-color: #e53e3e; }
+.qf-btn.qf-nav { border-style: dashed; }
+.qf-btn.qf-nav:hover { border-style: solid; }
+.qf-reset {
+  margin-left: auto;
+  font-size: 11px;
+  color: #a0aec0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.qf-reset:hover { color: #4a5568; background: #edf2f7; }
 
 .kpi-card.k-total    { border-left-color: #667eea; }
 .kpi-card.k-del      { border-left-color: #48bb78; }
 .kpi-card.k-transit  { border-left-color: #4299e1; }
-.kpi-card.k-late     { border-left-color: #f56565; }
+/* k-late styles consolidated above */
 .kpi-card.k-ontime   { border-left-color: #FFB500; }
 
 .kpi-label {
@@ -747,6 +802,17 @@ tr:hover td { background: #fafbff; }
     <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
   </div>
 
+  <!-- Quick Analysis bar -->
+  <div class="quick-bar">
+    <span class="quick-bar-label">Quick View:</span>
+    <button class="qf-btn" id="qfAll"     onclick="quickFilter('all')">All Shipments</button>
+    <button class="qf-btn" id="qfLate"    onclick="quickFilter('late')">&#128534; Late Only</button>
+    <button class="qf-btn qf-nav" id="qfSvc"  onclick="quickFilter('svc')">Late &#8250; by Service &#8595;</button>
+    <button class="qf-btn qf-nav" id="qfRecv" onclick="quickFilter('recv')">Late &#8250; by Receiver &#8595;</button>
+    <button class="qf-btn" id="qfOntime"  onclick="quickFilter('ontime')">&#10003; On Time Only</button>
+    <button class="qf-reset" onclick="quickFilter('all')" title="Clear quick filter">&#10005; Clear</button>
+  </div>
+
   <!-- KPI Cards -->
   <div class="kpi-grid">
     <div class="kpi-card k-total">
@@ -764,7 +830,7 @@ tr:hover td { background: #fafbff; }
       <div class="kpi-value" id="kTransit">—</div>
       <div class="kpi-sub" id="kTransitPct"></div>
     </div>
-    <div class="kpi-card k-late">
+    <div class="kpi-card k-late" id="kpiLate" onclick="quickFilter('late')" title="Click to show late shipments only">
       <div class="kpi-label">Late Deliveries</div>
       <div class="kpi-value" id="kLate">—</div>
       <div class="kpi-sub" id="kLatePct"></div>
@@ -1084,6 +1150,7 @@ function applyFilters() {
   updateKPIs();
   updateCharts();
   renderTable();
+  updateQuickBtns();
 
   const total = allRows.length;
   const shown = filtered.length;
@@ -1551,6 +1618,48 @@ function esc(s) {
 
 function setStatus(html) {
   document.getElementById('statusText').innerHTML = html;
+}
+
+function quickFilter(mode) {
+  const la = document.getElementById('fLate');
+  if (mode === 'all') {
+    la.value = '';
+    applyFilters();
+  } else if (mode === 'late') {
+    la.value = 'late';
+    applyFilters();
+  } else if (mode === 'ontime') {
+    la.value = 'ontime';
+    applyFilters();
+  } else if (mode === 'svc') {
+    la.value = 'late';
+    applyFilters();
+    setTimeout(() => {
+      document.getElementById('cLateService').closest('.chart-card')
+        .scrollIntoView({behavior:'smooth', block:'start'});
+    }, 80);
+  } else if (mode === 'recv') {
+    la.value = 'late';
+    applyFilters();
+    setTimeout(() => {
+      document.getElementById('cLateRecv').closest('.chart-card')
+        .scrollIntoView({behavior:'smooth', block:'start'});
+    }, 80);
+  }
+}
+
+function updateQuickBtns() {
+  const la = document.getElementById('fLate').value;
+  const map = { '':'qfAll', 'late':'qfLate', 'ontime':'qfOntime' };
+  ['qfAll','qfLate','qfSvc','qfRecv','qfOntime'].forEach(id => {
+    document.getElementById(id)?.classList.remove('qf-active');
+  });
+  if (map[la]) document.getElementById(map[la])?.classList.add('qf-active');
+  if (la === 'late') {
+    document.getElementById('qfSvc')?.classList.add('qf-active');
+    document.getElementById('qfRecv')?.classList.add('qf-active');
+  }
+  document.getElementById('kpiLate')?.classList.toggle('active-filter', la === 'late');
 }
 
 function resetFilters() {
