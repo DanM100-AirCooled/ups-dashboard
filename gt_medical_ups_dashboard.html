@@ -808,8 +808,12 @@ tr:hover td { background: #fafbff; }
     </div>
   </div>
 
-  <!-- Row 3: Exception counts by type -->
-  <div class="charts-row" style="grid-template-columns:1fr;">
+  <!-- Row 3: Late by Service + Exception counts by type -->
+  <div class="charts-row" style="grid-template-columns:1fr 1fr;">
+    <div class="chart-card">
+      <div class="chart-title">Late Deliveries by Service Type</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="cLateService"></canvas></div>
+    </div>
     <div class="chart-card">
       <div class="chart-title">Exception Counts by Type</div>
       <div class="chart-wrap" id="cExcWrap" style="height:200px"><canvas id="cExc"></canvas></div>
@@ -1171,6 +1175,7 @@ function updateCharts() {
   chartStatus();
   chartService();
   chartLateByRecv();
+  chartLateByService();
   chartByShipper();
   chartMonthly();
   chartByRecv();
@@ -1323,6 +1328,37 @@ function chartLateByRecv() {
   const trunc = s => s.length>18 ? s.slice(0,16)+'…' : s;
 
   mkChart('cLateRecv', {
+    type: 'bar',
+    data: {
+      labels: keys.map(trunc),
+      datasets: [
+        { label:'Late',    data: keys.map(k=>late[k]||0), backgroundColor:'#f5656599', borderColor:'#f56565', borderWidth:1, borderRadius:3 },
+        { label:'On Time', data: keys.map(k=>onT[k]||0),  backgroundColor:'#48bb7899', borderColor:'#48bb78', borderWidth:1, borderRadius:3 },
+        { label:'N/A',     data: keys.map(k=>(total[k]||0)-(late[k]||0)-(onT[k]||0)), backgroundColor:'#e2e8f099', borderColor:'#cbd5e0', borderWidth:1, borderRadius:3 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{font:{size:12},color:'#4a5568'} } },
+      scales:{ x:{...axStyle.x, stacked:true}, y:{...axStyle.y, stacked:true} }
+    }
+  });
+}
+
+/* Late vs On-Time by service type (stacked bar) */
+function chartLateByService() {
+  const late={}, onT={}, total={};
+  filtered.forEach(r => {
+    const k = (r['Service']||'Unknown').replace(/^UPS\s+/i,'');
+    total[k]=(total[k]||0)+1;
+    if (r._late===true)  late[k]=(late[k]||0)+1;
+    if (r._late===false) onT[k]=(onT[k]||0)+1;
+  });
+
+  const keys = Object.keys(total).sort((a,b)=>(late[b]||0)-(late[a]||0)||(total[b]-total[a]));
+  const trunc = s => s.length>22 ? s.slice(0,20)+'…' : s;
+
+  mkChart('cLateService', {
     type: 'bar',
     data: {
       labels: keys.map(trunc),
