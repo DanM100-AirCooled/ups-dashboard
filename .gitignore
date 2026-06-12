@@ -1,0 +1,6 @@
+# Secrets — never commit (plaintext credentials)
+ups_watcher.env.txt
+*.env
+
+# Local Claude Code settings
+.claude/settings.local.json
