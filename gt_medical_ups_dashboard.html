@@ -1783,9 +1783,9 @@ function initMap() {
   if (shipMap || !document.getElementById('shipmentMap')) return;
   shipMap = L.map('shipmentMap', { zoomControl: true, scrollWheelZoom: true })
              .setView([38.5, -96], 4);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Canvas/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '© <a href="https://www.esri.com/">Esri</a>',
-    maxZoom: 16
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 18
   }).addTo(shipMap);
 }
 
